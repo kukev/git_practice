@@ -4,22 +4,6 @@ SELECT question, COUNT(DISTINCT user_id)
 FROM survey
 GROUP BY 1;
 
---- conversion rate from quiz to try on and try on to purchase
-
-WITH 'try_on_funnel' AS (SELECT q.user_id,
-h.user_id IS NOT NULL AS 'is_home_try_on',
-h.number_of_pairs,
-p.user_id IS NOT NULL AS 'is_purchase'
-FROM quiz as 'q'
-LEFT JOIN home_try_on AS 'h'
-  ON h.user_id = q.user_id
-LEFT JOIN purchase AS 'p'
-  ON p.user_id = h.user_id)
-SELECT COUNT(user_id) AS 'quiz_completion',
-1.0 * SUM(is_home_try_on)/COUNT(user_id) AS 'try_on_conversion',
-1.0 * SUM(is_purchase)/SUM(is_home_try_on) AS 'purchase_conversion'
-FROM try_on_funnel;
-
 ---Percent trying on and purchasing after quiz
 
 WITH 'try_on_funnel' AS (SELECT q.user_id,
@@ -36,7 +20,7 @@ SELECT COUNT(user_id) AS 'quiz_completion',
 100.0 * SUM(is_purchase)/COUNT(user_id) AS 'purchase_percentage'
 FROM try_on_funnel;
 
---- A/B test results
+--- conversion rate from quiz to try on and try on to purchase
 
 WITH 'try_on_funnel' AS (SELECT q.user_id,
 h.user_id IS NOT NULL AS 'is_home_try_on',
@@ -47,11 +31,30 @@ LEFT JOIN home_try_on AS 'h'
   ON h.user_id = q.user_id
 LEFT JOIN purchase AS 'p'
   ON p.user_id = h.user_id)
-SELECT number_of_pairs, 
+SELECT COUNT(user_id) AS 'quiz_completion',
+1.0 * SUM(is_home_try_on)/COUNT(user_id) AS 'try_on_conversion',
 1.0 * SUM(is_purchase)/SUM(is_home_try_on) AS 'purchase_conversion'
-FROM try_on_funnel
-WHERE number_of_pairs NOT NULL
-GROUP BY 1;
+FROM try_on_funnel;
+
+ --- A/B test results
+
+ WITH 'try_on_funnel' AS (SELECT q.user_id,
+ h.user_id IS NOT NULL AS 'is_home_try_on',
+ h.number_of_pairs,
+ p.user_id IS NOT NULL AS 'is_purchase'
+ FROM quiz as 'q'
+ LEFT JOIN home_try_on AS 'h'
+   ON h.user_id = q.user_id
+ LEFT JOIN purchase AS 'p'
+   ON p.user_id = h.user_id)
+SELECT number_of_pairs, 
+SUM(is_home_try_on) AS 'try_on',
+SUM(is_purchase) AS 'purchase',
+ROUND(100.0 * SUM(is_purchase)/SUM(is_home_try_on)) AS 'purchase_conversion'
+ FROM try_on_funnel
+ WHERE number_of_pairs NOT NULL
+ GROUP BY 1;
+
 
 ---- Most common style quiz answers
 
