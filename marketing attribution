@@ -1,0 +1,33 @@
+---Using user_id, timestamp, and utm_source to identify first touch and last touch in a database tracking UTM parameter data
+WITH first_touch AS(
+  SELECT user_id,
+  MIN(timestamp) AS first_touch_at
+  FROM page_visits
+  GROUP BY 1),
+last_touch AS(
+  SELECT user_id,
+  MAX(timestamp) AS last_touch_at
+  FROM page_visits
+  GROUP BY 1),
+first_touch_source AS(
+  SELECT ft.user_id,
+  ft.first_touch_at,
+  pv.utm_source AS first_source
+  FROM first_touch ft
+  JOIN page_visits pv
+    ON ft.user_id = pv.user_id
+    AND ft.first_touch_at = pv.timestamp),
+last_touch_source AS(
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source AS last_source
+  FROM last_touch lt
+  JOIN page_visits pv
+    ON lt.user_id = pv.user_id
+    AND lt.last_touch_at = pv.timestamp)
+SELECT first_source, count(first_source)
+FROM first_touch_source fts
+JOIN last_touch_source lts
+  ON fts.user_id = lts.user_id
+GROUP BY 1
+;
