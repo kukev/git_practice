@@ -1,0 +1,247 @@
+---How many distinct utm-campaigns and sources are there?
+SELECT COUNT(DISTINCT utm_campaign), COUNT(DISTINCT utm_source)
+FROM page_visits;
+
+---How do the campaigns and the sources relate?
+SELECT DISTINCT utm_campaign, utm_source
+FROM page_visits;
+
+---What are the web pages on the CTS website?
+SELECT DISTINCT page_name
+FROM page_visits;
+
+---How many first touches is each campaign responsible for?
+WITH first_touch AS (
+    SELECT user_id,
+        MIN(timestamp) as first_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+first_touch_join AS ( 
+SELECT ft.user_id,
+    ft.first_touch_at,
+    pv.utm_source,
+		pv.utm_campaign
+FROM first_touch ft
+JOIN page_visits pv
+    ON ft.user_id = pv.user_id
+    AND ft.first_touch_at = pv.timestamp)
+SELECT utm_campaign,
+    COUNT(user_id)
+FROM first_touch_join
+GROUP BY 1
+ORDER BY 2 DESC;
+
+---How many last touches is each campaign responsible for?
+WITH last_touch AS (
+  SELECT user_id,
+  MAX(timestamp) as last_touch_at
+  FROM page_visits
+  GROUP BY user_id),
+last_touch_join AS (
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source,
+  pv.utm_campaign
+FROM last_touch lt
+JOIN page_visits pv
+  ON lt.user_id = pv.user_id
+  AND lt.last_touch_at = pv.timestamp)
+SELECT utm_campaign, 
+    COUNT(user_id)
+FROM last_touch_join
+GROUP BY 1
+ORDER BY 2 DESC;
+
+--How many visitors make a purchase?
+SELECT COUNT(DISTINCT user_id)
+FROM page_visits
+WHERE page_name = '4 - purchase';
+
+---How many last touches on the purchase page is each campaign responsible for?
+WITH last_touch AS (
+  SELECT user_id,
+  MAX(timestamp) as last_touch_at
+  FROM page_visits
+  WHERE page_name = '4 - purchase'
+  GROUP BY user_id),
+last_touch_join AS (
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source,
+  pv.utm_campaign
+FROM last_touch lt
+JOIN page_visits pv
+  ON lt.user_id = pv.user_id
+  AND lt.last_touch_at = pv.timestamp)
+SELECT utm_campaign, 
+    COUNT(user_id)
+FROM last_touch_join
+GROUP BY 1
+ORDER BY 2 DESC;
+
+---How many first touch campaigns lead to purchases?
+WITH first_touch AS (
+    SELECT user_id,
+        MIN(timestamp) as first_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+first_touch_join AS ( 
+SELECT ft.user_id,
+    ft.first_touch_at,
+    pv.utm_source,
+		pv.utm_campaign AS first_touch_campaign
+FROM first_touch ft
+JOIN page_visits pv
+    ON ft.user_id = pv.user_id
+    AND ft.first_touch_at = pv.timestamp),
+last_touch AS (
+  SELECT user_id,
+  MAX(timestamp) as last_touch_at
+  FROM page_visits
+  WHERE page_name = '4 - purchase'
+  GROUP BY user_id),
+last_touch_join AS (
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source,
+  pv.utm_campaign AS last_touch_campaign
+FROM last_touch lt
+JOIN page_visits pv
+  ON lt.user_id = pv.user_id
+  AND lt.last_touch_at = pv.timestamp)
+SELECT ftj.first_touch_campaign,
+    ltj.last_touch_campaign,
+    COUNT(ftj.user_id)
+FROM first_touch_join ftj
+JOIN last_touch_join ltj
+  ON ftj.user_id = ltj.user_id
+GROUP BY 1
+ORDER BY 3 DESC;
+
+---How do first touch campaign results relate to succesful last touch campaigns?
+WITH first_touch AS (
+    SELECT user_id,
+        MIN(timestamp) as first_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+first_touch_join AS ( 
+SELECT ft.user_id,
+    ft.first_touch_at,
+    pv.utm_source,
+		pv.utm_campaign AS first_touch_campaign
+FROM first_touch ft
+JOIN page_visits pv
+    ON ft.user_id = pv.user_id
+    AND ft.first_touch_at = pv.timestamp),
+last_touch AS (
+  SELECT user_id,
+  MAX(timestamp) as last_touch_at
+  FROM page_visits
+  WHERE page_name = '4 - purchase'
+  GROUP BY user_id),
+last_touch_join AS (
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source,
+  pv.utm_campaign AS last_touch_campaign
+FROM last_touch lt
+JOIN page_visits pv
+  ON lt.user_id = pv.user_id
+  AND lt.last_touch_at = pv.timestamp)
+SELECT ftj.first_touch_campaign,
+    ltj.last_touch_campaign,
+    COUNT(ftj.user_id)
+FROM first_touch_join ftj
+JOIN last_touch_join ltj
+  ON ftj.user_id = ltj.user_id
+GROUP BY 1,2
+ORDER BY 3 DESC;
+
+
+
+---I would invest in the three leading first touch campaigns (driving over 1500 users to the site) and the the retargeting ad and weekly newsletter for driving succesful last touches.
+
+WITH first_touch AS (
+    SELECT user_id,
+        MIN(timestamp) as first_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+first_touch_join AS ( 
+SELECT ft.user_id,
+    ft.first_touch_at,
+    pv.utm_source,
+		pv.utm_campaign AS first_touch_campaign
+FROM first_touch ft
+JOIN page_visits pv
+    ON ft.user_id = pv.user_id
+    AND ft.first_touch_at = pv.timestamp),
+last_touch AS (
+  SELECT user_id,
+  MAX(timestamp) as last_touch_at
+  FROM page_visits
+  WHERE page_name = '4 - purchase'
+  GROUP BY user_id),
+last_touch_join AS (
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source,
+  pv.utm_campaign AS last_touch_campaign
+FROM last_touch lt
+JOIN page_visits pv
+  ON lt.user_id = pv.user_id
+  AND lt.last_touch_at = pv.timestamp)
+SELECT COUNT(ftj.user_id)
+FROM first_touch_join ftj
+JOIN last_touch_join ltj
+  ON ftj.user_id = ltj.user_id
+WHERE (ftj.first_touch_campaign = 'interview-with-cool-tshirts-founder' 
+OR ftj.first_touch_campaign = 'ten-crazy-cool-tshirts-facts' 
+OR ftj.first_touch_campaign = 'getting-to-know-cool-tshirts')
+AND (ltj.last_touch_campaign = 'retargetting-ad' OR ltj.last_touch_campaign = 'weekly-newsletter');
+
+SELECT 1.0 * 210/361;
+
+---Combinations of those 5 campaigns resulted in 58% of sales.
+---What would happen if we didn't count sales from the ten-crazy-cool... campaign and added retargetting-campaign sales associated with the two remaining first touch campaigns?
+
+WITH first_touch AS (
+    SELECT user_id,
+        MIN(timestamp) as first_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+first_touch_join AS ( 
+SELECT ft.user_id,
+    ft.first_touch_at,
+    pv.utm_source,
+		pv.utm_campaign AS first_touch_campaign
+FROM first_touch ft
+JOIN page_visits pv
+    ON ft.user_id = pv.user_id
+    AND ft.first_touch_at = pv.timestamp),
+last_touch AS (
+  SELECT user_id,
+  MAX(timestamp) as last_touch_at
+  FROM page_visits
+  WHERE page_name = '4 - purchase'
+  GROUP BY user_id),
+last_touch_join AS (
+  SELECT lt.user_id,
+  lt.last_touch_at,
+  pv.utm_source,
+  pv.utm_campaign AS last_touch_campaign
+FROM last_touch lt
+JOIN page_visits pv
+  ON lt.user_id = pv.user_id
+  AND lt.last_touch_at = pv.timestamp)
+SELECT COUNT(ftj.user_id)
+FROM first_touch_join ftj
+JOIN last_touch_join ltj
+  ON ftj.user_id = ltj.user_id
+WHERE (ftj.first_touch_campaign = 'interview-with-cool-tshirts-founder'  
+OR ftj.first_touch_campaign = 'getting-to-know-cool-tshirts')
+AND (ltj.last_touch_campaign = 'retargetting-ad' OR ltj.last_touch_campaign = 'weekly-newsletter'
+OR ltj.last_touch_campaign = 'retargetting-campaign');
+
+---This returns a total sales figure of 174 vs. 210.
+SELECT 1.0 * 174/361;
+---This combination only accounted for 48% of sales.
