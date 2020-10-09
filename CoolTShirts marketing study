@@ -244,4 +244,7 @@ OR ltj.last_touch_campaign = 'retargetting-campaign');
 
 ---This returns a total sales figure of 174 vs. 210.
 SELECT 1.0 * 174/361;
----This combination only accounted for 48% of sales.
+---This combination only accounted for 48% of sales (as opposed to 58% from the combination evaluated above)
+
+
+
