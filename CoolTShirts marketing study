@@ -1,3 +1,4 @@
+
 ---How many distinct utm-campaigns and sources are there?
 SELECT COUNT(DISTINCT utm_campaign), COUNT(DISTINCT utm_source)
 FROM page_visits;
@@ -79,7 +80,7 @@ FROM last_touch_join
 GROUP BY 1
 ORDER BY 2 DESC;
 
----How many first touch campaigns lead to purchases?
+---How many first touches from each campaign lead to purchases?
 WITH first_touch AS (
     SELECT user_id,
         MIN(timestamp) as first_touch_at
@@ -110,13 +111,12 @@ JOIN page_visits pv
   ON lt.user_id = pv.user_id
   AND lt.last_touch_at = pv.timestamp)
 SELECT ftj.first_touch_campaign,
-    ltj.last_touch_campaign,
     COUNT(ftj.user_id)
 FROM first_touch_join ftj
 JOIN last_touch_join ltj
   ON ftj.user_id = ltj.user_id
 GROUP BY 1
-ORDER BY 3 DESC;
+ORDER BY 2 DESC;
 
 ---How do first touch campaign results relate to succesful last touch campaigns?
 WITH first_touch AS (
@@ -245,6 +245,7 @@ OR ltj.last_touch_campaign = 'retargetting-campaign');
 ---This returns a total sales figure of 174 vs. 210.
 SELECT 1.0 * 174/361;
 ---This combination only accounted for 48% of sales (as opposed to 58% from the combination evaluated above)
+
 
 
 
