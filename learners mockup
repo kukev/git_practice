@@ -1,0 +1,149 @@
+---What are the top 25 student email domains?
+SELECT email_domain,
+  COUNT(email_domain)
+FROM users
+WHERE email_domain LIKE '%.edu'
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 25;
+
+---How many .edu learners are from New York(state)? (there are no email domains not like .edu FYI)
+SELECT COUNT (user_id) AS new_yorkers
+FROM users
+WHERE (postal BETWEEN '10001' AND '11104')
+  AND (country = 'US')
+  AND (email_domain LIKE '%.edu');
+
+SELECT COUNT(user_id) AS mobile_app_users
+FROM users
+WHERE mobile_app LIKE '%mobile-user%';
+
+---Sign up counts per hour
+SELECT COUNT(sign_up_at),
+  strftime('%H', sign_up_at)
+FROM users
+GROUP BY 2;
+
+---Do different schools prefer different courses?
+WITH users_progress AS(
+  SELECT *
+  FROM users u
+    LEFT JOIN progress p
+    ON u.user_id = p.user_id
+),
+ course_choice AS (
+  SELECT user_id,
+  email_domain, 
+  CASE 
+    WHEN learn_cpp = 'started' 
+    OR learn_cpp = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_cpp,
+  CASE
+    WHEN learn_sql = 'started'
+    OR learn_sql = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_sql,
+  CASE
+    WHEN learn_html = 'started'
+    OR learn_html = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_html,
+  CASE
+    WHEN learn_javascript = 'started'
+    OR learn_javascript = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_javascript,
+  CASE
+    WHEN learn_java = 'started'
+    OR learn_java = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_java
+FROM users_progress
+)
+SELECT email_domain, 
+  COUNT(email_domain) AS students,
+  ROUND(100.0 * SUM(taking_cpp)/COUNT(email_domain)) AS 'cpp %',
+  ROUND(100.0 * SUM(taking_sql)/COUNT(email_domain)) AS 'sql %',
+  ROUND(100.0 * SUM(taking_html)/COUNT(email_domain)) AS 'html %',
+  ROUND(100.0 * SUM(taking_javascript)/COUNT(email_domain)) AS 'javascript %',
+  ROUND(100.0 * SUM(taking_java)/COUNT(email_domain)) AS 'java'
+FROM course_choice
+GROUP BY 1
+  HAVING COUNT(email_domain) > 9
+ORDER BY 2 DESC;
+
+---What do NY kids prefer to take?  Chicago?
+
+WITH users_progress AS(
+  SELECT *
+  FROM users u
+    LEFT JOIN progress p
+    ON u.user_id = p.user_id
+),
+ course_choice AS (
+  SELECT user_id,
+  email_domain, 
+  city,
+  CASE 
+    WHEN learn_cpp = 'started' 
+    OR learn_cpp = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_cpp,
+  CASE
+    WHEN learn_sql = 'started'
+    OR learn_sql = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_sql,
+  CASE
+    WHEN learn_html = 'started'
+    OR learn_html = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_html,
+  CASE
+    WHEN learn_javascript = 'started'
+    OR learn_javascript = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_javascript,
+  CASE
+    WHEN learn_java = 'started'
+    OR learn_java = 'completed'
+    THEN 1
+    ELSE 0
+    END AS taking_java
+FROM users_progress
+)
+SELECT city, 
+  COUNT(user_id) AS students,
+  ROUND(100.0 * SUM(taking_cpp)/COUNT(email_domain)) AS 'cpp %',
+  ROUND(100.0 * SUM(taking_sql)/COUNT(email_domain)) AS 'sql %',
+  ROUND(100.0 * SUM(taking_html)/COUNT(email_domain)) AS 'html %',
+  ROUND(100.0 * SUM(taking_javascript)/COUNT(email_domain)) AS 'javascript %',
+  ROUND(100.0 * SUM(taking_java)/COUNT(email_domain)) AS 'java'
+FROM course_choice
+GROUP BY 1
+  HAVING  (city = 'Chicago')
+    OR (city = 'New York')
+ORDER BY 2 DESC;
+
+
+
+
+
+
+
+
+
+
+
+
+
